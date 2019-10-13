@@ -33,7 +33,7 @@ export default class Index extends Component {
   createPoster() {
     this.$poster.draw({
       title: 'I hope I can protect the one thing i can\'t live without',
-      subTitl: 'Today is the first day of what\'s left of you life',
+      subTitle: 'Today is the first day of what\'s left of you life',
       tips: 'Iron Man',
       shareUrl: 'https://www.jianshu.com/u/0427dce733d3',
       posterImg: img,
