@@ -36,7 +36,7 @@ export default class Index extends Component {
       subTitle: 'Today is the first day of what\'s left of you life',
       tips: 'Iron Man',
       shareUrl: 'https://www.jianshu.com/u/0427dce733d3',
-      posterImg: img,
+      posterImg: 'https://tse4-mm.cn.bing.net/th?id=OIP._uiZTI4GzgKZAxuOY_HcbwHaKS&w=197&h=273&c=7&o=5&dpr=2&pid=1.7',
     })
   }
   returnUserInfo() {

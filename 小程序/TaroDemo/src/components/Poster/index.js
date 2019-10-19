@@ -65,9 +65,6 @@ class Poster extends Taro.PureComponent {
 
   // 生成二维码并且返回二维码图片信息
   async getQrcodeImageInfo(shareUrl) {
-
-    console.log('当前要生成的二维码链接', shareUrl)
-
     const imgBase64 = QR.drawImg(shareUrl, {
       typeNumber: 4,
       errorCorrectLevel: 'M',
@@ -151,8 +148,6 @@ class Poster extends Taro.PureComponent {
     this.drawData = data || {};
 
     const ctx = Taro.createCanvasContext('posterCanvas', this.$scope);
-    // 获取临时图片地址
-    // const headImg = await this.getHeadImageInfo();
 
     // this.props.onDraw(ctx, this.canvas);
     if (typeof this.props.onDraw === 'function') {
@@ -169,7 +164,6 @@ class Poster extends Taro.PureComponent {
     
     // 如果没有自定义绘制函数, 则使用默认的绘制方式
     await this.defaultDraw(ctx);
-    console.log('开始绘制')
     ctx.draw(false, () => {
       this.canvasToTempFilePath();
     });
@@ -219,16 +213,16 @@ class Poster extends Taro.PureComponent {
   //处理文字多出省略号显示
   dealWords(options) {
     options.ctx.setFontSize(options.fontSize); //设置字体大小
-    var allRow = Math.ceil(options.ctx.measureText(options.word).width / options.maxWidth); //实际总共能分多少行
-    var count = allRow >= options.maxLine ? options.maxLine : allRow; //实际能分多少行与设置的最大显示行数比，谁小就用谁做循环次数
+    let allRow = Math.ceil(options.ctx.measureText(options.word).width / options.maxWidth); //实际总共能分多少行
+    let count = allRow >= options.maxLine ? options.maxLine : allRow; //实际能分多少行与设置的最大显示行数比，谁小就用谁做循环次数
 
-    var endPos = 0; //当前字符串的截断点
+    let endPos = 0; //当前字符串的截断点
 
-    for (var j = 0; j < count; j++) {
-      var nowStr = options.word.slice(endPos); //当前剩余的字符串
-      var rowWid = 0; //每一行当前宽度    
+    for (let j = 0; j < count; j++) {
+      let nowStr = options.word.slice(endPos); //当前剩余的字符串
+      let rowWid = 0; //每一行当前宽度    
       if (options.ctx.measureText(nowStr).width > options.maxWidth) { //如果当前的字符串宽度大于最大宽度，然后开始截取
-        for (var m = 0; m < nowStr.length; m++) {
+        for (let m = 0; m < nowStr.length; m++) {
           rowWid += options.ctx.measureText(nowStr[m]).width; //当前字符串总宽度
           if (rowWid > options.maxWidth) {
             if (j === options.maxLine - 1) { //如果是最后一行
@@ -248,11 +242,11 @@ class Poster extends Taro.PureComponent {
   // 默认自带的绘制
   async defaultDraw(ctx) {
     Taro.showLoading({
-      title: '开始生成'
+      title: '正在绘制中'
     });
-    // 绘制默认图片
-    console.log('这样的图片不能绘制', defaultBg)
 
+    // 绘制背景图片, this.canvas是在constructor中定义, 默认width: 1080, height: 1917
+    // defaultBg是本地一张默认的图片, import defaultBg from './bg.jpeg'; 如果使用网络图片, 请wx.getImageInfo获取临时图片路径
     ctx.drawImage(defaultBg, 0, 0, 474, 842, 0, 0, this.canvas.width, this.canvas.height);
 
     // 圆角矩形进行剪切
@@ -260,6 +254,52 @@ class Poster extends Taro.PureComponent {
     // 绘制圆角矩形
     ctx.fillStyle = "#fff";
     ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+    // 绘制海报标题
+    if (this.drawData.title) {
+      ctx.setFillStyle('#333');
+      ctx.setFontSize(40);
+      this.dealWords({
+        ctx,
+        fontSize: 50,
+        word: this.drawData.title,
+        maxWidth: this.canvas.width - 120 * 2,
+        x: 120,
+        y: 120,
+        maxLine: 1
+      });
+    }
+
+    // 绘制副标题
+    if (this.drawData.subTitle) {
+      ctx.setFillStyle('#666');
+      ctx.setFontSize(30);
+      this.dealWords({
+        ctx,
+        fontSize: 30,
+        word: this.drawData.subTitle,
+        maxWidth: this.canvas.width - 120 * 2,
+        x: 120,
+        y: 180,
+        maxLine: 1
+      });
+    }
+
+    // 绘制主要的海报
+    if (this.drawData.posterImg) {
+      let _img = this.drawData.posterImg;
+      let reg = /^(http|https):\/\/([\w.]+\/?)\S*/;
+      if (reg.test(this.drawData.posterImg)) {
+        _img = await this.getWebImageInfo(this.drawData.posterImg);
+      }
+      ctx.drawImage(
+        _img,
+        120,
+        260,
+        820,
+        1200,
+      );
+    }
     
     // 绘制用户信息
     const nickName = this.getUserInfo().nickName;
@@ -308,58 +348,7 @@ class Poster extends Taro.PureComponent {
       ctx.fillText(this.drawData.tips, avatarInfo.x, avatarInfo.y + 250);
     }
 
-    // 绘制海报标题
-    if (this.drawData.title) {
-      ctx.setFillStyle('#333');
-      ctx.setFontSize(40);
-      this.dealWords({
-        ctx,
-        fontSize: 50,
-        word: this.drawData.title,
-        maxWidth: this.canvas.width - 120 * 2,
-        x: 120,
-        y: 120,
-        maxLine: 1
-      });
-
-      // 尝试画一个最大的宽度
-      // console.log(this.canvas.width - 120 * 2);
-      // ctx.fillStyle='#000';
-      // ctx.fillRect(120, 120, this.canvas.width-120*2, 60);
-    }
-
-    // 绘制副标题
-    if (this.drawData.subTitle) {
-      ctx.setFillStyle('#666');
-      ctx.setFontSize(30);
-      this.dealWords({
-        ctx,
-        fontSize: 30,
-        word: this.drawData.subTitle,
-        maxWidth: this.canvas.width - 120 * 2,
-        x: 120,
-        y: 180,
-        maxLine: 1
-      });
-    }
- 
-    // 绘制主要的海报
-    if (this.drawData.posterImg) {
-      let _img = this.drawData.posterImg;
-      let reg = /^(http|https):\/\/([\w.]+\/?)\S*/;
-      if (reg.test(this.drawData.posterImg)) {
-        _img = await this.getWebImageInfo(this.drawData.posterImg);
-      }
-      ctx.drawImage(
-        _img,
-        120,
-        260,
-        820,
-        1200,
-      );
-    }
-
-    // 绘制动态二维码
+    // // 绘制动态二维码
     const shareUrl = this.drawData.shareUrl;
     const qrCodeImage = await this.getQrcodeImageInfo(shareUrl);
 
